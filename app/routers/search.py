@@ -1,24 +1,32 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
-from ..services.vector_store import search_similar_chunks, store_document_chunks, split_text_into_chunks
+from ..services.vector_store import (
+    search_similar_chunks,
+    store_document_chunks,
+    split_text_into_chunks,
+    hybrid_search,
+)
 
 router = APIRouter()
 
+
 @router.get("/search", response_model=List[Dict[str, Any]])
-async def semantic_search(query: str, k: int = 5):
+async def semantic_search(query: str, k: int = 5, mode: str = "hybrid"):
     """
-    Perform semantic search on document chunks.
-    
+    Perform semantic or hybrid search on document chunks.
+
     Args:
         query: The search query
         k: Number of results to return (default: 5)
-    
+        mode: "hybrid" (dense + BM25 with RRF) or "dense"
+
     Returns:
-        List of similar chunks with their metadata and similarity scores
+        List of similar chunks with metadata and similarity scores.
     """
     try:
-        results = search_similar_chunks(query, k)
-        return results
+        if mode == "hybrid":
+            return hybrid_search(query, k)
+        return search_similar_chunks(query, k)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

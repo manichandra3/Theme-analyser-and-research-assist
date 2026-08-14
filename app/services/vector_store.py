@@ -1,94 +1,85 @@
-from typing import List, Dict, Any
-import chromadb
-from chromadb.config import Settings
-import google.generativeai as genai
+from typing import List, Dict, Any, Optional
+
+from ..rag.chunking import get_chunker, estimate_tokens
+from ..rag.config import RAGConfig
+from ..rag.embeddings import get_embedder
 from ..core.config import settings
+from ..rag.store import ChromaAdapter
 
-# Initialize Gemini
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# Shared Chroma-backed adapter used by ingestion and retrieval.
+_adapter = ChromaAdapter()
 
-# Initialize ChromaDB client
-chroma_client = chromadb.Client(Settings(
-    persist_directory="data/chroma",
-    anonymized_telemetry=False
-))
+# Chunker and embedder mirroring the RAG pipeline defaults.
+_chunker = get_chunker(RAGConfig().chunking_strategy, max_tokens=RAGConfig().chunk_size_tokens)
+_embedder = get_embedder(settings.GEMINI_API_KEY)
 
-# Create or get collection
-collection = chroma_client.get_or_create_collection(
-    name="documents"
-)
 
 def get_embedding(text: str) -> List[float]:
-    """Get embedding for text using Gemini."""
-    result = genai.embed_content(
-        model="embedding-001",
-        content=text,
-        task_type="retrieval_document"
-    )
-    return result["embedding"]
+    """Get embedding for text using the configured embedder."""
+    return _embedder.embed(text)
+
 
 def approximate_tokens(text: str) -> int:
-    """Approximate token count using character-based estimation.
-    This is a rough approximation: 1 token ≈ 4 characters for English text."""
-    return len(text) // 4
+    """Approximate token count using character-based estimation."""
+    return estimate_tokens(text)
+
 
 def split_text_into_chunks(text: str, max_tokens: int = 500) -> List[str]:
-    """Split text into chunks of maximum token size."""
-    chunks = []
-    current_chunk = []
-    current_tokens = 0
-    
-    # Split by paragraphs first
-    paragraphs = text.split('\n\n')
-    
-    for para in paragraphs:
-        para_tokens = approximate_tokens(para)
-        
-        if current_tokens + para_tokens > max_tokens and current_chunk:
-            chunks.append('\n\n'.join(current_chunk))
-            current_chunk = [para]
-            current_tokens = para_tokens
-        else:
-            current_chunk.append(para)
-            current_tokens += para_tokens
-    
-    if current_chunk:
-        chunks.append('\n\n'.join(current_chunk))
-    
-    return chunks
+    """Split text into chunks using the recursive chunker."""
+    chunks = _chunker.chunk("_", 0, text)
+    return [c.text for c in chunks]
+
 
 def store_document_chunks(doc_id: str, page_num: int, chunks: List[str]) -> None:
     """Store document chunks in the vector database."""
-    for i, chunk in enumerate(chunks):
-        embedding = get_embedding(chunk)
-        collection.add(
-            embeddings=[embedding],
-            documents=[chunk],
-            metadatas=[{
-                "doc_id": doc_id,
-                "page": page_num,
-                "chunk_num": i
-            }],
-            ids=[f"{doc_id}_page{page_num}_chunk{i}"]
+    from ..rag.types import Chunk
+
+    objs = [
+        Chunk(
+            id=f"{doc_id}_p{page_num}_c{i}",
+            text=text,
+            doc_id=doc_id,
+            page=page_num,
+            chunk_num=i,
+            token_count=estimate_tokens(text),
         )
+        for i, text in enumerate(chunks)
+    ]
+    embeddings = _embedder.embed_many([c.text for c in objs])
+    _adapter.add_chunks(objs, embeddings)
+
 
 def search_similar_chunks(query: str, k: int = 5) -> List[Dict[str, Any]]:
-    """Search for similar chunks using semantic search."""
-    query_embedding = get_embedding(query)
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=k
-    )
-    
+    """Search for similar chunks using dense semantic search."""
+    emb = _embedder.embed(query)
+    results = _adapter.dense_search(emb, k)
     return [
         {
-            "text": doc,
-            "metadata": meta,
-            "distance": dist
+            "text": rc.chunk.text,
+            "metadata": rc.chunk.metadata,
+            "distance": 1.0 - rc.dense_score,
         }
-        for doc, meta, dist in zip(
-            results["documents"][0],
-            results["metadatas"][0],
-            results["distances"][0]
-        )
-    ] 
+        for rc in results
+    ]
+
+
+def hybrid_search(query: str, k: int = 5) -> List[Dict[str, Any]]:
+    """Hybrid search using dense embeddings + BM25 with RRF fusion."""
+    from ..rag.retrieval import RetrievalPipeline
+    from ..rag.types import QueryPlan
+
+    pipeline = RetrievalPipeline(_embedder, _adapter)
+    result = pipeline.retrieve(QueryPlan(original=query))
+    return [
+        {
+            "text": rc.chunk.text,
+            "metadata": rc.chunk.metadata,
+            "dense_score": rc.dense_score,
+            "sparse_score": rc.sparse_score,
+            "sources": rc.sources,
+        }
+        for rc in result.chunks[:k]
+    ]
+
+
+collection = _adapter.collection

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { HomeIcon, DocumentIcon, MagnifyingGlassIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
-import { uploadDocument, searchDocuments, askQuestion, deleteDocument, getDocumentDetails } from './services/api';
+import { HomeIcon, DocumentIcon, MagnifyingGlassIcon, QuestionMarkCircleIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { uploadDocument, searchDocuments, askQuestion, deleteDocument, getDocumentDetails, evaluateRetrieval, evaluateGeneration } from './services/api';
 import api from './services/api';
 
 function App() {
@@ -45,6 +45,13 @@ function App() {
                     <QuestionMarkCircleIcon className="h-5 w-5 mr-1" />
                     Q&A
                   </Link>
+                  <Link
+                    to="/evaluate"
+                    className="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    <ChartBarIcon className="h-5 w-5 mr-1" />
+                    Evaluate
+                  </Link>
                 </div>
               </div>
             </div>
@@ -60,6 +67,7 @@ function App() {
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/qa" element={<QA />} />
+                <Route path="/evaluate" element={<Evaluate />} />
               </Routes>
             </div>
           </div>
@@ -547,6 +555,7 @@ function Documents() {
 
 function Search() {
   const [query, setQuery] = useState('');
+  const [mode, setMode] = useState('hybrid');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
@@ -563,7 +572,7 @@ function Search() {
     setError(null);
 
     try {
-      const searchResults = await searchDocuments(query);
+      const searchResults = await searchDocuments(query, mode);
       setResults(searchResults);
     } catch (err) {
       setError(err.message);
@@ -612,6 +621,29 @@ function Search() {
           </div>
         </div>
 
+        <div className="mt-3 flex justify-center space-x-2">
+          <button
+            onClick={() => setMode('hybrid')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+              mode === 'hybrid'
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Hybrid (dense + BM25)
+          </button>
+          <button
+            onClick={() => setMode('dense')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+              mode === 'dense'
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Dense only
+          </button>
+        </div>
+
         {error && (
           <div className="mt-4 p-4 bg-red-50 rounded-md">
             <p className="text-sm text-red-700">{error}</p>
@@ -630,9 +662,26 @@ function Search() {
               <div key={index} className="bg-white shadow rounded-lg p-4">
                 <p className="text-sm text-gray-900">{result.text}</p>
                 <div className="mt-2 flex items-center justify-between">
-                  <p className="text-xs text-gray-500">
-                    Document ID: {result.metadata.doc_id}
-                  </p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-xs text-gray-500">
+                      Document ID: {result.metadata.doc_id}
+                    </p>
+                    {result.dense_score !== undefined && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        dense {result.dense_score.toFixed(3)}
+                      </span>
+                    )}
+                    {result.sparse_score !== undefined && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        bm25 {result.sparse_score.toFixed(3)}
+                      </span>
+                    )}
+                    {result.sources && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        {result.sources.join(', ')}
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={() => handleViewDocument(
                       result.metadata.doc_id,
@@ -881,4 +930,187 @@ function QA() {
   );
 }
 
-export default App; 
+function Evaluate() {
+  const [mode, setMode] = useState('retrieval');
+  const [k, setK] = useState(5);
+  const [testCases, setTestCases] = useState('');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const metricLabels = {
+    recall: 'Recall@k',
+    precision: 'Precision@k',
+    mrr: 'MRR',
+    ndcg: 'NDCG@k',
+    hit_rate: 'Hit Rate@k',
+  };
+
+  const handleRun = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const parsed = JSON.parse(testCases || '[]');
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('Enter at least one test case as a JSON array');
+      }
+      const data = mode === 'retrieval'
+        ? await evaluateRetrieval(parsed, k)
+        : await evaluateGeneration(parsed, k);
+      setResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">Evaluate RAG Quality</h2>
+      <p className="text-sm text-gray-600 mb-6">
+        Run metric-driven tests against the retrieval and generation pipeline to measure quality.
+      </p>
+
+      <div className="mb-4 flex space-x-2">
+        <button
+          onClick={() => { setMode('retrieval'); setResult(null); }}
+          className={`px-4 py-2 text-sm font-medium rounded-md border transition-colors ${
+            mode === 'retrieval'
+              ? 'bg-primary-600 text-white border-primary-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Retrieval (Recall@k, MRR, NDCG)
+        </button>
+        <button
+          onClick={() => { setMode('generation'); setResult(null); }}
+          className={`px-4 py-2 text-sm font-medium rounded-md border transition-colors ${
+            mode === 'generation'
+              ? 'bg-primary-600 text-white border-primary-600'
+              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          Generation (Faithfulness, Relevance)
+        </button>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Test cases (JSON array)
+        </label>
+        <textarea
+          rows={8}
+          value={testCases}
+          onChange={(e) => setTestCases(e.target.value)}
+          placeholder={mode === 'retrieval' ? 'Retrieval: each case needs "question" and "relevant_chunk_ids".' : 'Generation: each case needs "question" and optional "reference_answer".'}
+          className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md font-mono"
+        />
+        <p className="mt-2 text-xs text-gray-500">
+          Chunk ids follow the pattern <span className="font-mono">docId_p{'{page}'}_c{'{num}'}</span>. Tip: use the
+          document details view to find page/paragraph references.
+        </p>
+        <div className="mt-4 flex items-center space-x-4">
+          <button
+            onClick={handleRun}
+            disabled={loading}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+          >
+            {loading ? 'Running...' : 'Run Evaluation'}
+          </button>
+          <span className="flex items-center space-x-2 text-sm text-gray-600">
+            <span>Top-{k}</span>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={k}
+              onChange={(e) => setK(Number(e.target.value))}
+              className="w-32"
+            />
+          </span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 rounded-md">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {result && mode === 'retrieval' && (
+        <>
+          <div className="bg-white shadow rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Averaged Retrieval Metrics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {Object.entries(result.averages).map(([key, value]) => (
+                <div key={key} className="bg-gray-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-primary-600">{(value * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-gray-500 mt-1">{metricLabels[key] || key}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Per-question breakdown</h3>
+            <div className="space-y-4">
+              {result.per_question.map((item, idx) => (
+                <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-gray-900">{item.question}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {Object.entries(item.metrics).map(([k2, v]) => (
+                      <span key={k2} className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-xs text-gray-700">
+                        {metricLabels[k2] || k2}: {(v * 100).toFixed(0)}%
+                      </span>
+                    ))}
+                  </div>
+                  <details className="mt-3">
+                    <summary className="text-xs text-primary-600 hover:text-primary-500 cursor-pointer">
+                      Retrieved chunk ids
+                    </summary>
+                    <pre className="mt-2 text-xs font-mono text-gray-600 bg-gray-50 rounded p-3 overflow-x-auto">
+                      {item.retrieved_chunk_ids.join('\n')}
+                    </pre>
+                  </details>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {result && mode === 'generation' && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Generation Quality</h3>
+          <div className="space-y-4">
+            {result.results.map((item, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-gray-900">{item.question}</p>
+                <p className="mt-2 text-sm text-gray-600">
+                  <span className="font-medium">Answer:</span> {item.answer}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-primary-600">
+                      {(item.metrics.faithfulness * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Faithfulness (context grounded)</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-primary-600">
+                      {(item.metrics.answer_relevance * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Answer Relevance</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

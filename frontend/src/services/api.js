@@ -25,14 +25,38 @@ export const uploadDocument = async (file) => {
   }
 };
 
-export const searchDocuments = async (query) => {
+export const searchDocuments = async (query, mode = 'hybrid') => {
   try {
     const response = await api.get('/search', {
-      params: { query },
+      params: { query, mode },
     });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Error searching documents');
+  }
+};
+
+export const evaluateRetrieval = async (testCases, evalK = 5) => {
+  try {
+    const response = await api.post('/evaluate/retrieval', {
+      test_cases: testCases,
+      eval_k: evalK,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Error running retrieval evaluation');
+  }
+};
+
+export const evaluateGeneration = async (testCases, finalK = 5) => {
+  try {
+    const response = await api.post('/evaluate/generation', {
+      test_cases: testCases,
+      final_k: finalK,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Error running generation evaluation');
   }
 };
 
