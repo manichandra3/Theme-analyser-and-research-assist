@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+app:
+  gemini-api-key: ${GEMINI_API_KEY:}
+  gemini-model: gemini-2.0-flash
+  groundedness-threshold: 0.6
+  fastapi:
+    base-url: http://localhost:8000
+    timeout-seconds: 60
