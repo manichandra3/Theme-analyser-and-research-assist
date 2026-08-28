@@ -52,3 +52,6 @@ data/chroma/
 htmlcov/
 .pytest_cache/
 .tox/ 
+
+# Frontend
+./frontend/node_modules/

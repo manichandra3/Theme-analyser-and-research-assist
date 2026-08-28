@@ -1,0 +1,5 @@
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/test/java/com/example/documentapp/service/CitationValidatorTest.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/test/java/com/example/documentapp/service/DefaultVerificationPolicyTest.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/test/java/com/example/documentapp/service/FallbackGroundednessJudgeTest.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/test/java/com/example/documentapp/service/LexicalGroundednessJudgeTest.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/test/java/com/example/documentapp/service/VerificationPipelineTest.java

@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Python FastAPI Backend
+  backend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: doc-processing-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_URL=sqlite:///./data/docs.db
+      - TESSERACT_CMD=/usr/bin/tesseract
+    volumes:
+      - backend_data:/app/data
+    networks:
+      - doc-processing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Spring Boot Middleware
+  middleware:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: doc-processing-middleware
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - APP_GEMINI_API_KEY=${GEMINI_API_KEY}
+      - APP_GEMINI_MODEL=gemini-2.0-flash
+      - APP_GROUNDEDNESS_THRESHOLD=0.6
+      - APP_FASTAPI_BASE_URL=http://backend:8000
+      - APP_FASTAPI_TIMEOUT_SECONDS=60
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - doc-processing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: doc-processing-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://middleware:8080/api
+    depends_on:
+      middleware:
+        condition: service_healthy
+    networks:
+      - doc-processing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  backend_data:
+
+networks:
+  doc-processing-network:
+    driver: bridge

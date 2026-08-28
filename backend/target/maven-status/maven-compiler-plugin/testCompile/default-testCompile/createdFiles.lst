@@ -1,0 +1,5 @@
+com/example/documentapp/service/CitationValidatorTest.class
+com/example/documentapp/service/FallbackGroundednessJudgeTest.class
+com/example/documentapp/service/LexicalGroundednessJudgeTest.class
+com/example/documentapp/service/DefaultVerificationPolicyTest.class
+com/example/documentapp/service/VerificationPipelineTest.class
