@@ -29,11 +29,16 @@
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/dto/VerifyResponse.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/Citation.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/CitationValidator.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/DefaultVerificationPolicy.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/FallbackGroundednessJudge.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/FastApiClient.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/GeminiGroundednessJudge.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/GroundednessJudge.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/GroundednessJudgeFactory.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/LexicalGroundednessJudge.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/RagPipelineIntegrationService.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/VerificationPipeline.java
+/home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/VerificationPolicy.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/service/VerificationService.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/web/ApiError.java
 /home/manichandra/developer/python/Theme-analyser-and-research-assist/backend/src/main/java/com/example/documentapp/web/GlobalExceptionHandler.java
