@@ -1,0 +1,45 @@
+{
+  "family": "theme-analyser-springboot",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "springboot",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/theme-analyser-springboot:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {"name": "APP_GEMINI_API_KEY", "value": ""},
+        {"name": "APP_GEMINI_MODEL", "value": "gemini-2.0-flash"},
+        {"name": "APP_GROUNDEDNESS_THRESHOLD", "value": "0.6"},
+        {"name": "APP_FASTAPI_BASE_URL", "value": "http://fastapi-service:8000"},
+        {"name": "APP_FASTAPI_TIMEOUT_SECONDS", "value": "60"},
+        {"name": "SPRING_PROFILES_ACTIVE", "value": "docker"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/theme-analyser-springboot",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
