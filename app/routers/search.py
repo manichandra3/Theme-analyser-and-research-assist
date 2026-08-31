@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
-from ..services.vector_store import (
+from services.vector_store import (
     search_similar_chunks,
     store_document_chunks,
     split_text_into_chunks,

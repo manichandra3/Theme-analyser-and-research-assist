@@ -1,10 +1,10 @@
 from typing import Dict, List, Optional
 
-from ..core.config import settings
-from ..rag.config import RAGConfig
-from ..rag.judges import LLMJudge
-from ..rag.metrics import retrieval_metrics
-from ..rag.pipeline import RAGPipeline
+from core.config import settings
+from rag.config import RAGConfig
+from rag.judges import LLMJudge
+from rag.metrics import retrieval_metrics
+from rag.pipeline import RAGPipeline
 
 
 def run_retrieval_evaluation(test_cases: List[Dict], eval_k: int = 5) -> Dict:

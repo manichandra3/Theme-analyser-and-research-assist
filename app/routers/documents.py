@@ -6,10 +6,10 @@ import aiofiles
 from datetime import datetime
 import shutil
 
-from ..db.database import get_db
-from ..services.document_processor import DocumentProcessor
-from ..core.config import settings
-from ..services.vector_store import collection
+from db.database import get_db
+from services.document_processor import DocumentProcessor
+from core.config import settings
+from services.vector_store import collection
 
 router = APIRouter()
 

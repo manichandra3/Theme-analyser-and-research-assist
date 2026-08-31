@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
-from ..services.qa_service import answer_question
+from services.qa_service import answer_question
 
 router = APIRouter()
 

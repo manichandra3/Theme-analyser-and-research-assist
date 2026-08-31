@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
-from ..services.evaluation_service import run_retrieval_evaluation, run_generation_evaluation
+from services.evaluation_service import run_retrieval_evaluation, run_generation_evaluation
 
 router = APIRouter()
 

@@ -5,9 +5,9 @@ import os
 from datetime import datetime
 import json
 
-from .routers import documents, search, qa, evaluation
-from .core.config import settings
-from .db.database import engine, Base
+from routers import documents, search, qa, evaluation
+from core.config import settings
+from db.database import engine, Base
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

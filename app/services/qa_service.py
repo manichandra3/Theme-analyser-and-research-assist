@@ -1,12 +1,12 @@
 from typing import List, Dict, Any
 
-from ..core.config import settings
-from ..db.database import SessionLocal
-from ..db.models import Document
+from core.config import settings
+from db.database import SessionLocal
+from db.models import Document
 from .theme_synthesizer import synthesize_themes
-from ..rag.pipeline import RAGPipeline
-from ..rag.config import RAGConfig
-from ..rag.metrics import retrieval_metrics
+from rag.pipeline import RAGPipeline
+from rag.config import RAGConfig
+from rag.metrics import retrieval_metrics
 
 
 def get_all_document_content() -> List[Dict[str, Any]]:

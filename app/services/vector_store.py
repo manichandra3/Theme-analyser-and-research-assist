@@ -1,10 +1,10 @@
 from typing import List, Dict, Any, Optional
 
-from ..rag.chunking import get_chunker, estimate_tokens
-from ..rag.config import RAGConfig
-from ..rag.embeddings import get_embedder
-from ..core.config import settings
-from ..rag.store import ChromaAdapter
+from rag.chunking import get_chunker, estimate_tokens
+from rag.config import RAGConfig
+from rag.embeddings import get_embedder
+from core.config import settings
+from rag.store import ChromaAdapter
 
 # Shared Chroma-backed adapter used by ingestion and retrieval.
 _adapter = ChromaAdapter()

@@ -26,25 +26,25 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 # Build and push FastAPI
 echo "Building FastAPI..."
 cd app
-docker build -t ${ECR_PREFIX}-fastapi .
-docker tag ${ECR_PREFIX}-fastapi:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-fastapi:latest
-docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-fastapi:latest
+sudo docker build -t ${ECR_PREFIX}-fastapi .
+sudo docker tag ${ECR_PREFIX}-fastapi:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-fastapi:latest
+sudo docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-fastapi:latest
 cd ..
 
 # Build and push Spring Boot
 echo "Building Spring Boot..."
 cd backend
-docker build -t ${ECR_PREFIX}-springboot .
-docker tag ${ECR_PREFIX}-springboot:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-springboot:latest
-docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-springboot:latest
+sudo docker build -t ${ECR_PREFIX}-springboot .
+sudo docker tag ${ECR_PREFIX}-springboot:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-springboot:latest
+sudo docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-springboot:latest
 cd ..
 
 # Build and push React
 echo "Building React..."
 cd frontend
-docker build -t ${ECR_PREFIX}-react .
-docker tag ${ECR_PREFIX}-react:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-react:latest
-docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-react:latest
+sudo docker build -t ${ECR_PREFIX}-react .
+sudo docker tag ${ECR_PREFIX}-react:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-react:latest
+sudo docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_PREFIX}-react:latest
 cd ..
 
 # Create ECS cluster

@@ -6,8 +6,8 @@ from PIL import Image
 from typing import List, Dict, Any
 import json
 from datetime import datetime
-from ..core.config import settings
-from ..db.models import Document, Page, Paragraph
+from core.config import settings
+from db.models import Document, Page, Paragraph
 from sqlalchemy.orm import Session
 from .vector_store import store_document_chunks, split_text_into_chunks
 

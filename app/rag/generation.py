@@ -2,6 +2,7 @@ import time
 from typing import List
 
 import google.generativeai as genai
+from typing import Optional
 
 from .config import RAGConfig
 from .types import GenerationResult, RetrievedChunk
